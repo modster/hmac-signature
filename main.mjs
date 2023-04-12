@@ -1,6 +1,5 @@
-const axios = require('axios');
-const crypto = require('crypto');
-const qs = require('qs');
+import { createHmac } from 'crypto';
+import { stringify } from 'qs';
 
 const binanceConfig = {
   API_KEY: '2UbVsabP55P9MpYGuUPAFmwutXW1qQ6MtWCUcVNklpB8syGrMPBF9LGYsRAzWR2c',
@@ -9,24 +8,25 @@ const binanceConfig = {
 };
 
 const buildSign = (data, config) => {
-  return crypto.createHmac('sha256', config.API_SECRET).update(data).digest('hex');
+  return createHmac('sha256', config.API_SECRET).update(data).digest('hex');
 };
 
 const privateRequest = async (data, endPoint, type) => {
-  const dataQueryString = qs.stringify(data);
+  const dataQueryString = stringify(data);
   const signature = buildSign(dataQueryString, binanceConfig);
+  const url = binanceConfig.HOST_URL + endPoint + '?' + dataQueryString + '&signature=' + signature;
+
   const requestConfig = {
     method: type,
-    url: binanceConfig.HOST_URL + endPoint + '?' + dataQueryString + '&signature=' + signature,
     headers: {
-        'X-MBX-APIKEY': binanceConfig.API_KEY,
+      'X-MBX-APIKEY': binanceConfig.API_KEY,
     },
   };
 
   try {
-    console.log('URL: ', requestConfig.url);
-    const response = await axios(requestConfig);
-    console.log(response.data);
+    console.log('URL: ', url);
+    const response = await fetch(url, requestConfig);
+    console.log(response.statusText);
     return response;
   }
   catch (err) {
@@ -37,13 +37,12 @@ const privateRequest = async (data, endPoint, type) => {
 
 const data = {
   symbol: 'BTCUSDT',
-    side: 'BUY',
-    type: 'LIMIT',
-    timeInForce: 'GTC',
-    quantity: 0.001,
-    price: 10000.0,
-
-  recvWindow: 20000,
+  side: 'BUY',
+  type: 'LIMIT',
+  timeInForce: 'GTC',
+  quantity: 0.001,
+  price: 10000.0,
+  recvWindow: 2000,
   timestamp: Date.now(),
 };
 
